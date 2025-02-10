@@ -41,6 +41,7 @@
     "@radix-ui/react-toggle": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@supabase/supabase-js": "^2.45.6",
+    "@tensorflow-models/blazeface": "^0.1.0",
     "@tensorflow-models/face-landmarks-detection": "1.0.2",
     "@tensorflow/tfjs-backend-webgl": "3.7.0",
     "@tensorflow/tfjs-converter": "3.7.0",
