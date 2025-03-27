@@ -18,7 +18,12 @@ const Home = () => {
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm"
+        className="fixed top-0 left-0 right-0 z-50 shadow-md"
+        style={{
+          backgroundImage: 'url("/assets/bg-header-pattern.png")',
+          backgroundRepeat: "repeat",
+          borderBottom: "1px solid rgba(0,0,0,0.1)",
+        }}
       >
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -43,9 +48,14 @@ const Home = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm py-4"
+        className="fixed bottom-0 left-0 right-0 z-50 shadow-md"
+        style={{
+          backgroundImage: 'url("/assets/bg-header-pattern.png")',
+          backgroundRepeat: "repeat",
+          borderTop: "1px solid rgba(0,0,0,0.1)",
+        }}
       >
-        <div className="container mx-auto px-4 text-center text-sm text-gray-600">
+        <div className="container mx-auto px-4 text-center text-sm text-gray-600 py-4">
           2024 Squint Game. Use a working webcam for the best experience.
         </div>
       </motion.footer>
