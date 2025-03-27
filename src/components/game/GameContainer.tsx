@@ -28,6 +28,7 @@ const GameContainer = ({
   const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const difficultyRef = useRef<number>(1); // Difficulty multiplier
+  const dollTimerRef = useRef<NodeJS.Timeout | null>(null); // Reference for doll turning timer
 
   // Mock eye tracking data for demonstration
   const [eyeTrackingData, setEyeTrackingData] = useState<{
@@ -58,6 +59,11 @@ const GameContainer = ({
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
+    }
+    // Clear doll timer if running
+    if (dollTimerRef.current) {
+      clearTimeout(dollTimerRef.current);
+      dollTimerRef.current = null;
     }
     // Reset game time and countdown
     setGameTime(0);
@@ -136,11 +142,58 @@ const GameContainer = ({
       });
     }, 1000);
     
-    // Start the doll turning cycle
+    // Force the first turn after a short delay to ensure the game starts properly
     setTimeout(() => {
+      // First turn - make doll look at player
       setIsLookingAtPlayer(true);
+      
+      // Then schedule the normal turning cycle
+      setTimeout(() => {
+        scheduleDollTurn();
+      }, 100);
     }, 2000);
   }, []);
+
+  // Function to schedule the next doll turn
+  const scheduleDollTurn = useCallback(() => {
+    // Clear any existing doll timer
+    if (dollTimerRef.current) {
+      clearTimeout(dollTimerRef.current);
+      dollTimerRef.current = null;
+    }
+    
+    // Calculate timing based on current difficulty and whether doll is looking at player
+    const currentDifficulty = difficultyRef.current;
+    let delay: number;
+    
+    if (isLookingAtPlayer) {
+      // When looking at player (red light), stay longer as difficulty increases
+      // This makes it harder for the player as they need to avoid blinking longer
+      // Base delay: 3-5 seconds, multiplied by difficulty factor
+      const baseDelay = Math.random() * 2000 + 3000;
+      delay = baseDelay * currentDifficulty;
+      // Cap the maximum delay at 12 seconds to avoid excessive difficulty
+      delay = Math.min(delay, 12000);
+      console.log(`Doll looking at player (RED LIGHT). Will turn away in ${delay/1000} seconds. Difficulty: ${currentDifficulty}`);
+    } else {
+      // When facing away (green light), use a consistent shorter delay (1.5-3 seconds)
+      // This gives players a short but reasonable time to rest their eyes
+      // The rest time decreases slightly as difficulty increases
+      const baseDelay = Math.random() * 1500 + 1500;
+      // Rest time decreases as difficulty increases, but never below 1.5 seconds
+      delay = Math.max(baseDelay / (currentDifficulty * 0.5), 1500);
+      console.log(`Doll looking away (GREEN LIGHT). Will turn to face player in ${delay/1000} seconds. Difficulty: ${currentDifficulty}`);
+    }
+    
+    // Schedule the next turn if game is still active
+    if (isGameStarted && !isGameOver && !isVictory) {
+      console.log(`Scheduling doll to turn in ${delay/1000} seconds`);
+      dollTimerRef.current = setTimeout(() => {
+        console.log(`Turning doll from ${isLookingAtPlayer ? 'facing player' : 'facing away'} to ${!isLookingAtPlayer ? 'facing player' : 'facing away'}`);
+        setIsLookingAtPlayer(prev => !prev);
+      }, delay);
+    }
+  }, [isLookingAtPlayer, isGameStarted, isGameOver, isVictory]);
 
   const handleStartGame = useCallback(() => {
     if (isWebcamActive) {
@@ -169,33 +222,25 @@ const GameContainer = ({
       clearInterval(countdownTimerRef.current);
       countdownTimerRef.current = null;
     }
+    // Clear doll timer if running
+    if (dollTimerRef.current) {
+      clearTimeout(dollTimerRef.current);
+      dollTimerRef.current = null;
+    }
   }, []);
 
   const handleDollAnimationComplete = useCallback(() => {
-    // Toggle doll state after animation completes
+    // Schedule the next turn after animation completes
     if (!isGameOver && !isVictory && isGameStarted) {
-      const currentDifficulty = difficultyRef.current;
+      console.log(`Doll animation complete. Current state: ${isLookingAtPlayer ? 'Looking at player' : 'Looking away'}`);
       
-      // Calculate timing based on current difficulty and whether doll is looking at player
-      let delay: number;
-      
-      if (isLookingAtPlayer) {
-        // When looking at player, stay longer as difficulty increases
-        // Base delay: 2-4 seconds, multiplied by difficulty factor
-        const baseDelay = Math.random() * 2000 + 2000;
-        delay = baseDelay * currentDifficulty;
-        // Cap the maximum delay at 10 seconds
-        delay = Math.min(delay, 10000);
-      } else {
-        // When facing away, use a consistent shorter delay (1-2 seconds)
-        delay = Math.random() * 1000 + 1000;
+      // Only schedule next turn if we're not already in a transition
+      if (!dollTimerRef.current) {
+        console.log('Scheduling next doll turn...');
+        scheduleDollTurn();
       }
-      
-      setTimeout(() => {
-        setIsLookingAtPlayer((prev) => !prev);
-      }, delay);
     }
-  }, [isGameOver, isVictory, isGameStarted, isLookingAtPlayer]);
+  }, [isGameOver, isVictory, isGameStarted, scheduleDollTurn, isLookingAtPlayer]);
 
   // Check if player blinked while doll was looking
   useEffect(() => {
@@ -209,6 +254,12 @@ const GameContainer = ({
         clearInterval(gameTimerRef.current);
         gameTimerRef.current = null;
       }
+      
+      // Clear doll timer
+      if (dollTimerRef.current) {
+        clearTimeout(dollTimerRef.current);
+        dollTimerRef.current = null;
+      }
     }
   }, [isGameStarted, isLookingAtPlayer, eyeTrackingData.isBlink]);
 
@@ -220,6 +271,9 @@ const GameContainer = ({
       }
       if (countdownTimerRef.current) {
         clearInterval(countdownTimerRef.current);
+      }
+      if (dollTimerRef.current) {
+        clearTimeout(dollTimerRef.current);
       }
     };
   }, []);
@@ -305,8 +359,8 @@ const GameContainer = ({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
           className="rounded-lg flex-1 flex flex-col items-center shadow-lg border-4 border-[#5D4037] overflow-hidden relative">
-          <DollCharacter
-            isLookingAtPlayer={isLookingAtPlayer}
+          <DollCharacter 
+            isLookingAtPlayer={isLookingAtPlayer} 
             onAnimationComplete={handleDollAnimationComplete}
           />
 
@@ -350,7 +404,7 @@ const GameContainer = ({
             ></div>
           </div>
           <div className="text-right text-[#5D4037] mt-2 text-sm">
-            2024 Squint Game. Blink at your own risk.
+            {new Date().getFullYear()} Squint Game. Blink at your own risk.
           </div>
         </div>
       </div>

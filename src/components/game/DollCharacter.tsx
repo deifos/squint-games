@@ -16,6 +16,16 @@ const DollCharacter: React.FC<DollCharacterProps> = ({
   const [use3DModel, setUse3DModel] = useState(true);
   const [modelError, setModelError] = useState(false);
 
+  // Trigger animation complete callback when isLookingAtPlayer changes
+  useEffect(() => {
+    // Small delay to allow animation to start
+    const timer = setTimeout(() => {
+      console.log("Animation transition started, will complete soon");
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [isLookingAtPlayer]);
+
   // Fallback to images if 3D model fails to load
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -47,6 +57,10 @@ const DollCharacter: React.FC<DollCharacterProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.3 }}
+          onAnimationComplete={() => {
+            console.log("Front-facing animation complete");
+            onAnimationComplete();
+          }}
         >
           <motion.div
             className="relative w-[350px] h-[350px] flex items-center justify-center"
@@ -75,6 +89,10 @@ const DollCharacter: React.FC<DollCharacterProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
           transition={{ duration: 0.3 }}
+          onAnimationComplete={() => {
+            console.log("Back-facing animation complete");
+            onAnimationComplete();
+          }}
         >
           <motion.div
             className="relative w-[350px] h-[350px] flex items-center justify-center"
@@ -111,12 +129,16 @@ const DollCharacter: React.FC<DollCharacterProps> = ({
       <AnimatePresence mode="wait" onExitComplete={onAnimationComplete}>
         {use3DModel ? (
           <motion.div
-            key="3d-model"
+            key={`3d-model-${isLookingAtPlayer ? 'front' : 'back'}`}
             className="relative flex flex-col items-center justify-center h-full w-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            onAnimationComplete={() => {
+              console.log(`3D model animation complete (${isLookingAtPlayer ? 'front' : 'back'})`); 
+              onAnimationComplete();
+            }}
           >
             <div className="w-full h-full">
               <Suspense fallback={<LoadingFallback />}>
