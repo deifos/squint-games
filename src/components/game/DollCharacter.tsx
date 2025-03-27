@@ -11,20 +11,26 @@ const DollCharacter = ({
   onAnimationComplete = () => {},
 }: DollCharacterProps) => {
   return (
-    <div className="relative w-[300px] h-[400px] bg-white/80 backdrop-blur-sm rounded-lg shadow-sm overflow-hidden flex items-center justify-center">
+    <div className="w-[400px] h-[300px] bg-[#F5ECD7] relative overflow-hidden rounded-lg border-2 border-[#5D4037] flex items-center justify-center">
+      {/* Emotion icons in the corners */}
+      <div className="absolute top-4 left-4 text-2xl">😠</div>
+      <div className="absolute top-4 right-4 text-2xl">😠</div>
+      <div className="absolute bottom-4 left-4 text-2xl">😠</div>
+      <div className="absolute bottom-4 right-4 text-2xl">😠</div>
+      
       <AnimatePresence mode="wait" onExitComplete={onAnimationComplete}>
         {isLookingAtPlayer ? (
           // Front image when looking at player
           <motion.div
             key="looking"
-            className="relative flex flex-col items-center"
+            className="relative flex flex-col items-center justify-center h-full w-full"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.3 }}
           >
             <motion.div 
-              className="relative w-[250px] h-[350px] flex items-center justify-center"
+              className="relative w-[200px] h-[200px] flex items-center justify-center"
               animate={{
                 scale: [1, 1.05, 1],
               }}
@@ -45,14 +51,14 @@ const DollCharacter = ({
           // Back image when not looking
           <motion.div
             key="not-looking"
-            className="relative flex flex-col items-center"
+            className="relative flex flex-col items-center justify-center h-full w-full"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.3 }}
           >
             <motion.div 
-              className="relative w-[250px] h-[350px] flex items-center justify-center"
+              className="relative w-[200px] h-[200px] flex items-center justify-center"
               animate={{
                 rotate: [-2, 2, -2],
               }}

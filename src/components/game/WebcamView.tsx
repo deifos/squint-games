@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import useSound from "use-sound";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Camera, CameraOff } from "lucide-react";
 import * as tf from "@tensorflow/tfjs-core";
@@ -257,7 +256,7 @@ const WebcamView = ({
       requestAnimationFrame(detectFace);
     }
   };
-  
+
   // Helper function to draw all facial landmarks for debugging
   const drawAllFacialLandmarks = (ctx: CanvasRenderingContext2D, landmarks: number[][], width: number) => {
     ctx.fillStyle = "rgba(0, 255, 255, 0.5)";
@@ -384,8 +383,7 @@ const WebcamView = ({
           console.log("Video loaded, starting detection");
           setDetectionStatus("Webcam active. Detection starting...");
           onWebcamStart();
-          isTracking = true;
-          requestAnimationFrame(detectFace);
+          detectFace();
         };
       }
     } catch (err) {
@@ -401,10 +399,28 @@ const WebcamView = ({
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach((track) => track.stop());
       videoRef.current.srcObject = null;
-      onWebcamStop();
-      isTracking = false;
     }
+    onWebcamStop();
   };
+
+  // Effect to start/stop webcam based on isTracking prop
+  useEffect(() => {
+    if (isTracking && !videoRef.current?.srcObject) {
+      startWebcam();
+    } else if (!isTracking && videoRef.current?.srcObject) {
+      stopWebcam();
+    }
+  }, [isTracking]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (videoRef.current && canvasRef.current) {
@@ -464,7 +480,7 @@ const WebcamView = ({
   }, [isTracking, eyeTrackingData]);
 
   return (
-    <Card className="w-[640px] h-[480px] bg-white/80 backdrop-blur-sm relative overflow-hidden border-none shadow-sm">
+    <div className="w-[400px] h-[300px] bg-[#F5ECD7] relative overflow-hidden rounded-lg border-2 border-[#5D4037]">
       <video
         ref={videoRef}
         autoPlay
@@ -479,58 +495,43 @@ const WebcamView = ({
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
       />
       
-      {/* Eye position guides */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute left-1/2 top-1/2 transform -translate-x-[80px] -translate-y-[30px] w-6 h-6 border-2 border-dashed border-gray-800 rounded-full opacity-50"></div>
-        <div className="absolute left-1/2 top-1/2 transform translate-x-[30px] -translate-y-[30px] w-6 h-6 border-2 border-dashed border-gray-800 rounded-full opacity-50"></div>
-      </div>
+      {/* Single eye design overlay when webcam is not active */}
+      {!isTracking && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#F5ECD7]">
+          <div className="relative w-48 h-48 rounded-full bg-white border-4 border-[#5D4037] flex items-center justify-center">
+            <div className="absolute w-20 h-20 rounded-full bg-[#5D4037]"></div>
+            <div className="absolute w-8 h-8 rounded-full bg-white top-[52px] left-[52px]"></div>
+          </div>
+        </div>
+      )}
       
       {/* Add status overlay */}
       {(!isTracking || isModelLoading) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm text-gray-800">
-          <div className="text-center p-6 rounded bg-white/80 backdrop-blur-sm max-w-xs shadow-sm">
-            <p className="text-lg font-medium mb-4">{detectionStatus}</p>
-            {!isTracking && !isModelLoading && (
-              <Button
-                variant="outline"
-                onClick={startWebcam}
-                disabled={isModelLoading || !model}
-                className="w-full border-gray-300 hover:bg-white/60"
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Start Camera
-              </Button>
-            )}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute bottom-4 text-center p-2 max-w-xs">
+            <p className="text-lg font-medium mb-2 text-[#5D4037]">{detectionStatus}</p>
             {isModelLoading && (
-              <div className="w-8 h-8 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></div>
+              <div className="w-8 h-8 border-2 border-t-transparent border-[#5D4037] rounded-full animate-spin mx-auto"></div>
             )}
           </div>
         </div>
       )}
       
-      <div className="absolute bottom-4 right-4 flex gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={startWebcam}
-          disabled={isTracking || isModelLoading || !model}
-          className="bg-white/80 text-gray-800 border-gray-300 hover:bg-white/60"
-        >
-          <Camera className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={stopWebcam}
-          disabled={!isTracking}
-          className="bg-white/80 text-gray-800 border-gray-300 hover:bg-white/60"
-        >
-          <CameraOff className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Camera controls */}
+      {isTracking && (
+        <div className="absolute bottom-4 right-4">
+          <Button
+            onClick={stopWebcam}
+            size="icon"
+            className="bg-[#E6C28C] hover:bg-[#D4A76A] text-[#5D4037] border-2 border-[#5D4037] rounded-full w-10 h-10"
+          >
+            <CameraOff className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
       
       {/* Removed blink counter as requested */}
-    </Card>
+    </div>
   );
 };
 
