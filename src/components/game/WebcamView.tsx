@@ -121,7 +121,7 @@ const WebcamView = ({
     // Take the average
     const ear = (leftEAR + rightEAR) / 2.0;
     
-    // Update EAR history for debugging visualization
+    // Update EAR history for debugging
     setEarHistory(prev => {
       const newHistory = [...prev, ear];
       if (newHistory.length > 30) { // Keep only last 30 values
@@ -464,7 +464,7 @@ const WebcamView = ({
   }, [isTracking, eyeTrackingData]);
 
   return (
-    <Card className="w-[640px] h-[480px] bg-gray-900 relative overflow-hidden">
+    <Card className="w-[640px] h-[480px] bg-white/80 backdrop-blur-sm relative overflow-hidden border-none shadow-sm">
       <video
         ref={videoRef}
         autoPlay
@@ -479,24 +479,30 @@ const WebcamView = ({
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
       />
       
+      {/* Eye position guides */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-[80px] -translate-y-[30px] w-6 h-6 border-2 border-dashed border-gray-800 rounded-full opacity-50"></div>
+        <div className="absolute left-1/2 top-1/2 transform translate-x-[30px] -translate-y-[30px] w-6 h-6 border-2 border-dashed border-gray-800 rounded-full opacity-50"></div>
+      </div>
+      
       {/* Add status overlay */}
       {(!isTracking || isModelLoading) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-white">
-          <div className="text-center p-6 rounded bg-gray-800/80 max-w-xs">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm text-gray-800">
+          <div className="text-center p-6 rounded bg-white/80 backdrop-blur-sm max-w-xs shadow-sm">
             <p className="text-lg font-medium mb-4">{detectionStatus}</p>
             {!isTracking && !isModelLoading && (
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={startWebcam}
                 disabled={isModelLoading || !model}
-                className="w-full"
+                className="w-full border-gray-300 hover:bg-white/60"
               >
                 <Camera className="h-4 w-4 mr-2" />
                 Start Camera
               </Button>
             )}
             {isModelLoading && (
-              <div className="w-8 h-8 border-2 border-t-transparent border-white rounded-full animate-spin mx-auto"></div>
+              <div className="w-8 h-8 border-2 border-t-transparent border-gray-400 rounded-full animate-spin mx-auto"></div>
             )}
           </div>
         </div>
@@ -504,29 +510,26 @@ const WebcamView = ({
       
       <div className="absolute bottom-4 right-4 flex gap-2">
         <Button
-          variant="secondary"
+          variant="outline"
           size="icon"
           onClick={startWebcam}
           disabled={isTracking || isModelLoading || !model}
+          className="bg-white/80 text-gray-800 border-gray-300 hover:bg-white/60"
         >
           <Camera className="h-4 w-4" />
         </Button>
         <Button
-          variant="secondary"
+          variant="outline"
           size="icon"
           onClick={stopWebcam}
           disabled={!isTracking}
+          className="bg-white/80 text-gray-800 border-gray-300 hover:bg-white/60"
         >
           <CameraOff className="h-4 w-4" />
         </Button>
       </div>
       
-      {/* Add blink counter at the top */}
-      {isTracking && (
-        <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-lg font-bold">
-          {blinkCount}
-        </div>
-      )}
+      {/* Removed blink counter as requested */}
     </Card>
   );
 };

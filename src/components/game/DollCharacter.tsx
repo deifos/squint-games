@@ -1,6 +1,5 @@
 import React from "react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DollCharacterProps {
   isLookingAtPlayer?: boolean;
@@ -12,75 +11,66 @@ const DollCharacter = ({
   onAnimationComplete = () => {},
 }: DollCharacterProps) => {
   return (
-    <div className="relative w-[300px] h-[400px] bg-white rounded-lg shadow-lg overflow-hidden">
-      <motion.div
-        className="w-full h-full"
-        animate={{
-          rotateY: isLookingAtPlayer ? 0 : 180,
-        }}
-        transition={{
-          duration: 0.5,
-          ease: "easeInOut",
-        }}
-        onAnimationComplete={onAnimationComplete}
-      >
-        {/* Doll face when looking at player */}
-        <div
-          className={cn(
-            "absolute inset-0 w-full h-full flex flex-col items-center justify-center",
-            "[backface-visibility:hidden]",
-          )}
-        >
-          <div className="w-32 h-32 rounded-full bg-pink-200 mb-4">
-            {/* Eyes */}
-            <div className="relative w-full h-full">
-              <motion.div
-                animate={{
-                  scale: isLookingAtPlayer ? [1, 1.2, 1] : 1,
-                }}
-                transition={{
-                  duration: 0.5,
-                  repeat: isLookingAtPlayer ? Infinity : 0,
-                }}
-                className="relative w-full h-full"
-              >
-                <div className="absolute left-4 top-12 w-6 h-6 rounded-full bg-black flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                </div>
-                <div className="absolute right-4 top-12 w-6 h-6 rounded-full bg-black flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                </div>
-                {/* Smile - now animated */}
-                <motion.div
-                  animate={{
-                    scaleX: isLookingAtPlayer ? 1.2 : 0.8,
-                    scaleY: isLookingAtPlayer ? 1.1 : 0.9,
-                  }}
-                  className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-8 border-b-4 border-black rounded-b-full"
-                ></motion.div>
-              </motion.div>
-            </div>
-          </div>
-          <div className="w-48 h-48 bg-red-400 rounded-t-full">
-            {/* Dress */}
-          </div>
-        </div>
-
-        {/* Doll back when turned away */}
-        <div
-          className={cn(
-            "absolute inset-0 w-full h-full flex flex-col items-center justify-center",
-            "[backface-visibility:hidden] [transform:rotateY(180deg)]",
-          )}
-        >
-          <div className="w-32 h-32 rounded-full bg-pink-300 mb-4">
-            {/* Back of head */}
-          </div>
-          <div className="w-48 h-48 bg-red-500 rounded-t-full">
-            {/* Back of dress */}
-          </div>
-        </div>
-      </motion.div>
+    <div className="relative w-[300px] h-[400px] bg-white/80 backdrop-blur-sm rounded-lg shadow-sm overflow-hidden flex items-center justify-center">
+      <AnimatePresence mode="wait" onExitComplete={onAnimationComplete}>
+        {isLookingAtPlayer ? (
+          // Front image when looking at player
+          <motion.div
+            key="looking"
+            className="relative flex flex-col items-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="relative w-[250px] h-[350px] flex items-center justify-center"
+              animate={{
+                scale: [1, 1.05, 1],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                repeatType: "reverse",
+              }}
+            >
+              <img 
+                src="/assets/front.JPG" 
+                alt="Front facing character" 
+                className="max-w-full max-h-full object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        ) : (
+          // Back image when not looking
+          <motion.div
+            key="not-looking"
+            className="relative flex flex-col items-center"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div 
+              className="relative w-[250px] h-[350px] flex items-center justify-center"
+              animate={{
+                rotate: [-2, 2, -2],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatType: "reverse",
+              }}
+            >
+              <img 
+                src="/assets/back.JPG" 
+                alt="Back facing character" 
+                className="max-w-full max-h-full object-contain"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

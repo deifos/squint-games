@@ -31,11 +31,11 @@ const GameStatus = ({
   const progress = (currentRound / totalRounds) * 100;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-md bg-background">
-      <Card className="p-4 shadow-lg border-2">
+    <div className="w-full max-w-md">
+      <Card className="p-4 shadow-sm bg-white/80 backdrop-blur-sm border-none">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <Badge variant="outline" className="text-lg">
+            <Badge variant="outline" className="text-lg text-gray-800 border-gray-300">
               Round {currentRound}/{totalRounds}
             </Badge>
             <motion.div
@@ -44,31 +44,37 @@ const GameStatus = ({
               transition={{ duration: 1, repeat: Infinity }}
             >
               {!isGameOver && !isVictory && (
-                <Badge variant="secondary" className="bg-green-500 text-white">
+                <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
                   Game in Progress
                 </Badge>
               )}
             </motion.div>
           </div>
 
-          <Progress value={progress} className="h-2" />
+          <Progress 
+            value={progress} 
+            className="h-2 bg-gray-100" 
+          />
         </div>
       </Card>
 
       <AlertDialog open={isGameOver || isVictory}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white/90 backdrop-blur-sm border-none">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isVictory ? "🎉 Victory!" : "💀 Game Over!"}
+            <AlertDialogTitle className="text-2xl text-gray-800">
+              {isVictory ? "🎉 Victory!" : "🙈 Game Over!"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-lg text-gray-600">
               {isVictory
                 ? "Congratulations! You have completed all rounds successfully!"
-                : "You blinked at the wrong time! The doll caught you."}
+                : "You blinked at the wrong time! The monkey caught you."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={onRetry}>
+            <AlertDialogAction 
+              onClick={onRetry}
+              className="bg-gray-100 text-gray-800 border border-gray-300 hover:bg-gray-200"
+            >
               {isVictory ? "Play Again" : "Try Again"}
             </AlertDialogAction>
           </AlertDialogFooter>
