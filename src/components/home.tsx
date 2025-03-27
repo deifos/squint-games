@@ -19,19 +19,15 @@ const Home = () => {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="fixed top-0 left-0 right-0 z-50 shadow-md"
-        style={{
-          backgroundImage: 'url("/assets/bg-header-pattern.png")',
-          backgroundRepeat: "repeat",
-          borderBottom: "1px solid rgba(0,0,0,0.1)",
-        }}
       >
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <img
               src="/assets/brand.svg"
               alt="Squint Game Logo"
-              className="h-8"
+              className="h-12"
             />
+            {/* <span className="text-[#5D4037] text-xl font-bold">Squint Game</span> */}
           </div>
           <Button variant="outline" className="text-gray-700 hover:bg-gray-100">
             <HelpCircle className="w-4 h-4 mr-2" />
