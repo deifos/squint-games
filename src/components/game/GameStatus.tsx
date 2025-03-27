@@ -8,33 +8,68 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
+import { Clock } from "lucide-react";
 
 interface GameStatusProps {
   currentRound?: number;
   totalRounds?: number;
+  isGameStarted?: boolean;
   isGameOver?: boolean;
   isVictory?: boolean;
   onRetry?: () => void;
+  timeRemaining?: number;
+  totalTime?: number;
 }
 
 const GameStatus = ({
   currentRound = 1,
   totalRounds = 5,
+  isGameStarted = false,
   isGameOver = false,
   isVictory = false,
   onRetry = () => {},
+  timeRemaining = 180,
+  totalTime = 180,
 }: GameStatusProps) => {
+  // Format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  // Calculate progress percentage
+  const progressPercentage = Math.max(0, Math.min(100, (timeRemaining / totalTime) * 100));
+
   return (
     <div className="w-full max-w-md">
+      {/* Time remaining and progress bar */}
+      {isGameStarted && !isGameOver && !isVictory && (
+        <div className="mb-4 w-full">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center text-[#5D4037] font-medium">
+              <Clock className="w-4 h-4 mr-1" />
+              <span>{formatTime(timeRemaining)}</span>
+            </div>
+          </div>
+          <div className="w-full bg-[#E6C28C]/30 rounded-full h-2.5">
+            <div 
+              className="bg-[#E6C28C] h-2.5 rounded-full transition-all duration-1000 ease-linear"
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
+
       <AlertDialog open={isGameOver || isVictory}>
         <AlertDialogContent className="bg-[#F5ECD7] border-4 border-[#5D4037] rounded-lg p-6 max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl text-[#5D4037] font-bold text-center">
-              {isVictory ? "ud83cudf89 Victory!" : "ud83dude48 Game Over!"}
+              {isVictory ? "🎉 Victory!" : "🙈 Game Over!"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-lg text-[#5D4037] text-center">
               {isVictory
-                ? "Congratulations! You have completed all rounds successfully!"
+                ? "Congratulations! You survived the full 3 minutes!"
                 : "You blinked at the wrong time! The doll caught you."}
             </AlertDialogDescription>
           </AlertDialogHeader>

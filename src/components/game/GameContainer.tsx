@@ -23,7 +23,10 @@ const GameContainer = ({
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [gameTime, setGameTime] = useState(0); // Time in seconds
   const [timeRemaining, setTimeRemaining] = useState(180); // 3 minutes in seconds
+  const [countdownValue, setCountdownValue] = useState(5); // 5-second countdown timer
+  const [isCountingDown, setIsCountingDown] = useState(false); // Countdown state
   const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const difficultyRef = useRef<number>(1); // Difficulty multiplier
 
   // Mock eye tracking data for demonstration
@@ -45,65 +48,105 @@ const GameContainer = ({
   const handleWebcamStop = useCallback(() => {
     setIsWebcamActive(false);
     setIsGameStarted(false);
+    setIsCountingDown(false);
     // Clear game timer if running
     if (gameTimerRef.current) {
       clearInterval(gameTimerRef.current);
       gameTimerRef.current = null;
     }
-    // Reset game time
+    // Clear countdown timer if running
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    // Reset game time and countdown
+    setGameTime(0);
+    setTimeRemaining(180);
+    setCountdownValue(5);
+    difficultyRef.current = 1;
+  }, []);
+
+  const startCountdown = useCallback(() => {
+    if (isWebcamActive) {
+      setIsCountingDown(true);
+      setCountdownValue(5);
+      
+      // Start the countdown timer
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+      }
+      
+      countdownTimerRef.current = setInterval(() => {
+        setCountdownValue(prev => {
+          const newValue = prev - 1;
+          if (newValue <= 0) {
+            // When countdown reaches zero, start the actual game
+            setIsCountingDown(false);
+            setIsGameStarted(true);
+            if (countdownTimerRef.current) {
+              clearInterval(countdownTimerRef.current);
+              countdownTimerRef.current = null;
+            }
+            startGameTimer();
+            return 0;
+          }
+          return newValue;
+        });
+      }, 1000);
+    }
+  }, [isWebcamActive]);
+
+  const startGameTimer = useCallback(() => {
     setGameTime(0);
     setTimeRemaining(180);
     difficultyRef.current = 1;
+    
+    // Start with doll facing away from player
+    setIsLookingAtPlayer(false);
+    
+    // Start the game timer
+    if (gameTimerRef.current) {
+      clearInterval(gameTimerRef.current);
+    }
+    
+    gameTimerRef.current = setInterval(() => {
+      setGameTime(prev => {
+        const newTime = prev + 1;
+        // Update difficulty every 30 seconds
+        if (newTime % 30 === 0 && newTime > 0) {
+          difficultyRef.current += 0.5; // Increase difficulty
+          console.log(`Difficulty increased to ${difficultyRef.current}`);
+        }
+        return newTime;
+      });
+      
+      setTimeRemaining(prev => {
+        const newTimeRemaining = prev - 1;
+        if (newTimeRemaining <= 0) {
+          // Player wins if they survive 3 minutes
+          setIsVictory(true);
+          setIsGameStarted(false);
+          if (gameTimerRef.current) {
+            clearInterval(gameTimerRef.current);
+            gameTimerRef.current = null;
+          }
+          return 0;
+        }
+        return newTimeRemaining;
+      });
+    }, 1000);
+    
+    // Start the doll turning cycle
+    setTimeout(() => {
+      setIsLookingAtPlayer(true);
+    }, 2000);
   }, []);
 
   const handleStartGame = useCallback(() => {
     if (isWebcamActive) {
-      setIsGameStarted(true);
-      setGameTime(0);
-      setTimeRemaining(180);
-      difficultyRef.current = 1;
-      
-      // Start with doll facing away from player
-      setIsLookingAtPlayer(false);
-      
-      // Start the game timer
-      if (gameTimerRef.current) {
-        clearInterval(gameTimerRef.current);
-      }
-      
-      gameTimerRef.current = setInterval(() => {
-        setGameTime(prev => {
-          const newTime = prev + 1;
-          // Update difficulty every 30 seconds
-          if (newTime % 30 === 0 && newTime > 0) {
-            difficultyRef.current += 0.5; // Increase difficulty
-            console.log(`Difficulty increased to ${difficultyRef.current}`);
-          }
-          return newTime;
-        });
-        
-        setTimeRemaining(prev => {
-          const newTimeRemaining = prev - 1;
-          if (newTimeRemaining <= 0) {
-            // Player wins if they survive 3 minutes
-            setIsVictory(true);
-            setIsGameStarted(false);
-            if (gameTimerRef.current) {
-              clearInterval(gameTimerRef.current);
-              gameTimerRef.current = null;
-            }
-            return 0;
-          }
-          return newTimeRemaining;
-        });
-      }, 1000);
-      
-      // Start the doll turning cycle
-      setTimeout(() => {
-        setIsLookingAtPlayer(true);
-      }, 2000);
+      startCountdown(); // Start the countdown instead of immediately starting the game
     }
-  }, [isWebcamActive]);
+  }, [isWebcamActive, startCountdown]);
 
   const handleRetry = useCallback(() => {
     setCurrentRound(1);
@@ -113,12 +156,18 @@ const GameContainer = ({
     setIsLookingAtPlayer(false);
     setGameTime(0);
     setTimeRemaining(180);
+    setCountdownValue(5);
     difficultyRef.current = 1;
     
     // Clear game timer if running
     if (gameTimerRef.current) {
       clearInterval(gameTimerRef.current);
       gameTimerRef.current = null;
+    }
+    // Clear countdown timer if running
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
     }
   }, []);
 
@@ -163,11 +212,14 @@ const GameContainer = ({
     }
   }, [isGameStarted, isLookingAtPlayer, eyeTrackingData.isBlink]);
 
-  // Clean up interval on unmount
+  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (gameTimerRef.current) {
         clearInterval(gameTimerRef.current);
+      }
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
       }
     };
   }, []);
@@ -200,7 +252,7 @@ const GameContainer = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-[#F5ECD7] rounded-lg p-6 flex-1 flex flex-col items-center shadow-lg border-4 border-[#5D4037]">
+          className="bg-[#F5ECD7] rounded-lg p-6 flex-1 flex flex-col items-center shadow-lg border-4 border-[#5D4037] relative">
           <WebcamView
             onWebcamStart={handleWebcamStart}
             onWebcamStop={handleWebcamStop}
@@ -208,44 +260,45 @@ const GameContainer = ({
             eyeTrackingData={eyeTrackingData}
             onEyeDataUpdate={setEyeTrackingData}
           />
-
+            
+          {/* Countdown overlay */}
+          {isCountingDown && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 rounded-lg">
+              <div className="text-8xl font-bold text-white">{countdownValue}</div>
+            </div>
+          )}
+            
           {!isWebcamActive && (
             <Button 
               onClick={handleWebcamStart}
-              className="mt-4 bg-[#E6C28C] hover:bg-[#D4A76A] text-[#5D4037] border-2 border-[#5D4037] font-bold px-4 py-2 flex items-center gap-2 rounded-md"
+              className="mt-4 bg-[#E6C28C] hover:bg-[#D4A76A] text-[#5D4037] border-2 border-[#5D4037] flex items-center gap-2"
             >
-              <Camera className="w-5 h-5" />
+              <Camera size={16} />
               Start Camera
             </Button>
           )}
 
-          {isWebcamActive && !isGameStarted && !isGameOver && !isVictory && (
-            <Button 
+          {!isGameStarted && !isCountingDown && isWebcamActive && (
+            <Button
               onClick={handleStartGame}
-              className="mt-4 bg-[#E6C28C] hover:bg-[#D4A76A] text-[#5D4037] border-2 border-[#5D4037] font-bold px-4 py-2 flex items-center gap-2 rounded-md"
+              className="mt-4 bg-[#A1887F] hover:bg-[#8D6E63] text-white flex items-center gap-2"
             >
-              <Play className="w-5 h-5" />
+              <Play size={16} />
               Start Game
             </Button>
           )}
 
-          {isGameStarted && !isGameOver && !isVictory && (
-            <div className="mt-4 bg-[#5D4037] text-[#F5ECD7] px-4 py-3 rounded-md w-full">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-bold">Time Remaining:</span>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  <span className="text-xl font-mono">{formatTime(timeRemaining)}</span>
-                </div>
-              </div>
-              <div className="w-full bg-[#3E2723] h-2 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-[#E5A953]" 
-                  style={{ width: `${(timeRemaining / 180) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
+          {/* Game status display */}
+          <div className="mt-4 w-full">
+            <GameStatus
+              isGameStarted={isGameStarted || isCountingDown}
+              isGameOver={isGameOver}
+              isVictory={isVictory}
+              timeRemaining={timeRemaining}
+              totalTime={180}
+              onRetry={handleRetry}
+            />
+          </div>
         </motion.div>
 
         {/* Doll character panel */}
@@ -293,14 +346,6 @@ const GameContainer = ({
           2024 Squint Game. Blink at your own risk.
         </div>
       </div>
-
-      <GameStatus
-        currentRound={currentRound}
-        totalRounds={totalRounds}
-        isGameOver={isGameOver}
-        isVictory={isVictory}
-        onRetry={handleRetry}
-      />
     </div>
   );
 };
