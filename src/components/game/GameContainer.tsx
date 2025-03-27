@@ -304,14 +304,15 @@ const GameContainer = ({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="rounded-lg flex-1 flex flex-col items-center shadow-lg overflow-hidden">
+          className="rounded-lg flex-1 flex flex-col items-center shadow-lg border-4 border-[#5D4037] overflow-hidden relative">
           <DollCharacter
             isLookingAtPlayer={isLookingAtPlayer}
             onAnimationComplete={handleDollAnimationComplete}
           />
 
-          {isGameStarted && isLookingAtPlayer && (
-            <div className="mt-4 bg-[#E5A953] text-[#5D4037] px-4 py-3 rounded-md w-full text-center shadow-md">
+          {/* Alert overlay that's always present but only visible when needed */}
+          <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ${isGameStarted && isLookingAtPlayer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}>
+            <div className="bg-[#E5A953] text-[#5D4037] px-4 py-3 w-full text-center shadow-md">
               <div className="flex items-center justify-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
                 <span className="text-xl font-bold">DOLL TURNING!</span>
@@ -319,19 +320,20 @@ const GameContainer = ({
               </div>
               <div className="font-bold text-lg">DON'T BLINK!</div>
             </div>
-          )}
+          </div>
           
-          {isGameStarted && !isLookingAtPlayer && (
-            <div className="mt-4 bg-[#4CAF50]/80 text-white px-4 py-3 rounded-md w-full text-center shadow-md">
+          {/* Safe to blink overlay */}
+          <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ${isGameStarted && !isLookingAtPlayer ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}>
+            <div className="bg-[#4CAF50]/80 text-white px-4 py-3 w-full text-center shadow-md">
               <div className="font-bold text-lg">SAFE TO BLINK</div>
             </div>
-          )}
+          </div>
         </motion.div>
       </div>
 
       {/* Game progress bar */}
       <div className="mt-8 max-w-[1200px] w-full">
-        <div className="bg-[#F5ECD7] rounded-lg p-4 shadow-md border-2 border-[#5D4037]">
+        <div className="bg-[#F5ECD7] rounded-lg p-4 shadow-lg border-4 border-[#5D4037]">
           <div className="flex items-center justify-between mb-2">
             <div className="text-[#5D4037] font-bold text-lg">
               Game Progress: {(isGameStarted || isCountingDown) ? Math.round((gameTime / 180) * 100) : 0}%
