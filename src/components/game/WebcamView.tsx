@@ -45,8 +45,6 @@ const WebcamView = ({
   const blinkFrameCount = useRef(0);
   const BLINK_CONFIRMATION_FRAMES = 1; // Require fewer frames for faster response
   const [playChime] = useSound("/sounds/chime.mp3");
-  // Add history state for debugging
-  const [earHistory, setEarHistory] = useState<number[]>([]);
   // Add detection status state for better user feedback
   const [detectionStatus, setDetectionStatus] = useState<string>("Waiting for webcam");
 
@@ -119,15 +117,6 @@ const WebcamView = ({
     
     // Take the average
     const ear = (leftEAR + rightEAR) / 2.0;
-    
-    // Update EAR history for debugging
-    setEarHistory(prev => {
-      const newHistory = [...prev, ear];
-      if (newHistory.length > 30) { // Keep only last 30 values
-        return newHistory.slice(-30);
-      }
-      return newHistory;
-    });
     
     return ear;
   };
@@ -208,41 +197,11 @@ const WebcamView = ({
           if (canvasRef.current) {
             const ctx = canvasRef.current.getContext("2d");
             if (ctx) {
+              // Clear the canvas
               ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
               
-              // Draw ALL facial landmarks to debug
-              drawAllFacialLandmarks(ctx, landmarks, video.width);
-              
-              // Draw eye landmarks specifically
-              drawEyeRegions(ctx, landmarks, video.width);
-              
-              // Create a semi-transparent overlay for debug info
-              ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-              ctx.fillRect(10, 10, 300, 180);
-              
-              // Display EAR value
-              ctx.font = "20px Arial";
-              ctx.fillStyle = "#00FF00";
-              ctx.fillText(`EAR: ${isValidEAR ? ear.toFixed(3) : 'Invalid'}`, 20, 40);
-              ctx.fillText(`Threshold: ${EAR_THRESHOLD}`, 20, 70);
-              
-              // Display blink status with color
-              ctx.fillStyle = isBlink ? "#FF3333" : "#00FF00";
-              ctx.fillText(`Blinking: ${isBlink ? "YES" : "NO"}`, 20, 100);
-              
-              // Display blink count
-              ctx.fillStyle = "#FFFFFF";
-              ctx.fillText(`Total Blinks: ${blinkCount}`, 20, 130);
-              
-              // Display confirmation counter when blinking
-              if (isBlink) {
-                ctx.fillStyle = "#FF9900";
-                const confirmationText = `Confirming: ${blinkFrameCount.current}/${BLINK_CONFIRMATION_FRAMES}`;
-                ctx.fillText(confirmationText, 20, 160); 
-              }
-              
-              // Draw EAR history graph
-              drawEARGraph(ctx, earHistory);
+              // Draw just the eye landmarks with opacity
+              drawEyePoints(ctx, landmarks, video.width);
             }
           }
         } else {
@@ -257,109 +216,40 @@ const WebcamView = ({
     }
   };
 
-  // Helper function to draw all facial landmarks for debugging
-  const drawAllFacialLandmarks = (ctx: CanvasRenderingContext2D, landmarks: number[][], width: number) => {
-    ctx.fillStyle = "rgba(0, 255, 255, 0.5)";
-    landmarks.forEach((point, index) => {
-      if (index % 5 === 0) { // Draw every 5th point to avoid overcrowding
-        const x = width - point[0]; // Flip X for mirrored video
-        const y = point[1];
-        ctx.beginPath();
-        ctx.arc(x, y, 1, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    });
-  };
-  
-  // Draw eye regions specifically
-  const drawEyeRegions = (ctx: CanvasRenderingContext2D, landmarks: number[][], width: number) => {
-    // Left eye landmark indices
+  // Draw just the eye points with opacity
+  const drawEyePoints = (ctx: CanvasRenderingContext2D, landmarks: number[][], width: number) => {
+    // Eye landmark indices
     const leftEyeIndices = [33, 133, 159, 160, 161, 144, 145, 153, 154, 155];
-    // Right eye landmark indices
     const rightEyeIndices = [263, 362, 385, 386, 387, 373, 374, 380, 381, 382];
     
-    // Draw left eye region
-    ctx.strokeStyle = "#00FFFF";
-    ctx.lineWidth = 2;
+    // Draw eye points with opacity
+    ctx.fillStyle = "rgba(0, 255, 0, 0.4)"; // Semi-transparent green
+    ctx.strokeStyle = "rgba(0, 200, 0, 0.6)"; // Slightly more opaque green for outline
+    ctx.lineWidth = 1;
+    
+    // Draw left eye points
     leftEyeIndices.forEach(index => {
       if (index < landmarks.length) {
         const x = width - landmarks[index][0]; // Flip X for mirrored video
         const y = landmarks[index][1];
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
         ctx.stroke();
-        // Add index label for debugging
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "8px Arial";
-        ctx.fillText(`${index}`, x + 5, y);
       }
     });
     
-    // Draw right eye region
-    ctx.strokeStyle = "#FFFF00";
+    // Draw right eye points
     rightEyeIndices.forEach(index => {
       if (index < landmarks.length) {
         const x = width - landmarks[index][0]; // Flip X for mirrored video
         const y = landmarks[index][1];
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
         ctx.stroke();
-        // Add index label for debugging
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "8px Arial";
-        ctx.fillText(`${index}`, x + 5, y);
       }
     });
-  };
-  
-  // Draw EAR history graph
-  const drawEARGraph = (ctx: CanvasRenderingContext2D, history: number[]) => {
-    if (history.length < 2) return;
-    
-    const graphWidth = 300;
-    const graphHeight = 100;
-    const x = canvasRef.current!.width - graphWidth - 20;
-    const y = 20;
-    
-    // Draw background
-    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.fillRect(x, y, graphWidth, graphHeight);
-    
-    // Draw threshold line
-    ctx.strokeStyle = "#FF3333";
-    ctx.lineWidth = 1;
-    const thresholdY = y + graphHeight - (EAR_THRESHOLD * graphHeight * 2); // Scale for visibility
-    ctx.beginPath();
-    ctx.moveTo(x, thresholdY);
-    ctx.lineTo(x + graphWidth, thresholdY);
-    ctx.stroke();
-    
-    // Draw EAR history line
-    ctx.strokeStyle = "#00FF00";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    
-    const step = graphWidth / (history.length - 1);
-    
-    history.forEach((ear, i) => {
-      // Scale the EAR values for better visibility (typical EAR is 0.2-0.4)
-      const scaledEAR = ear * 2;
-      const pointX = x + (i * step);
-      const pointY = y + graphHeight - (scaledEAR * graphHeight);
-      
-      if (i === 0) {
-        ctx.moveTo(pointX, pointY);
-      } else {
-        ctx.lineTo(pointX, pointY);
-      }
-    });
-    
-    ctx.stroke();
-    
-    // Add label
-    ctx.font = "12px Arial";
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText("EAR History", x + 10, y + 15);
   };
 
   const startWebcam = async () => {
@@ -459,22 +349,6 @@ const WebcamView = ({
 
         drawEye(eyeTrackingData.leftEye.x, eyeTrackingData.leftEye.y);
         drawEye(eyeTrackingData.rightEye.x, eyeTrackingData.rightEye.y);
-
-        ctx.font = "48px Arial";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 4;
-        ctx.strokeText(
-          `${blinkCount}`,
-          canvasRef.current.width / 2,
-          canvasRef.current.height / 2,
-        );
-        ctx.fillText(
-          `${blinkCount}`,
-          canvasRef.current.width / 2,
-          canvasRef.current.height / 2,
-        );
       }
     }
   }, [isTracking, eyeTrackingData]);
@@ -488,12 +362,20 @@ const WebcamView = ({
         className="w-full h-full object-cover"
         style={{ transform: "scaleX(-1)" }}
       />
+      {/* Canvas for eye tracking dots */}
       <canvas
         ref={canvasRef}
         width={640}
         height={480}
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
       />
+      
+      {/* Blink counter in top right */}
+      {isTracking && (
+        <div className="absolute top-4 right-4 bg-[#E6C28C] text-[#5D4037] border-2 border-[#5D4037] rounded-full px-3 py-1 flex items-center justify-center shadow-md">
+          <span className="font-bold">{blinkCount}</span>
+        </div>
+      )}
       
       {/* Single eye design overlay when webcam is not active */}
       {!isTracking && (
@@ -505,15 +387,10 @@ const WebcamView = ({
         </div>
       )}
       
-      {/* Add status overlay */}
-      {(!isTracking || isModelLoading) && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="absolute bottom-4 text-center p-2 max-w-xs">
-            <p className="text-lg font-medium mb-2 text-[#5D4037]">{detectionStatus}</p>
-            {isModelLoading && (
-              <div className="w-8 h-8 border-2 border-t-transparent border-[#5D4037] rounded-full animate-spin mx-auto"></div>
-            )}
-          </div>
+      {/* Loading indicator (only show when model is loading) */}
+      {isModelLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#F5ECD7]/80">
+          <div className="w-12 h-12 border-4 border-t-transparent border-[#5D4037] rounded-full animate-spin"></div>
         </div>
       )}
       
@@ -529,8 +406,6 @@ const WebcamView = ({
           </Button>
         </div>
       )}
-      
-      {/* Removed blink counter as requested */}
     </div>
   );
 };
