@@ -294,8 +294,6 @@ const GameContainer = ({
               isGameStarted={isGameStarted || isCountingDown}
               isGameOver={isGameOver}
               isVictory={isVictory}
-              timeRemaining={timeRemaining}
-              totalTime={180}
               onRetry={handleRetry}
             />
           </div>
@@ -306,14 +304,14 @@ const GameContainer = ({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="bg-[#F5ECD7] rounded-lg p-6 flex-1 flex flex-col items-center shadow-lg border-4 border-[#5D4037]">
+          className="rounded-lg flex-1 flex flex-col items-center shadow-lg overflow-hidden">
           <DollCharacter
             isLookingAtPlayer={isLookingAtPlayer}
             onAnimationComplete={handleDollAnimationComplete}
           />
 
           {isGameStarted && isLookingAtPlayer && (
-            <div className="mt-4 bg-[#E5A953] text-[#5D4037] px-4 py-3 rounded-md w-full text-center">
+            <div className="mt-4 bg-[#E5A953] text-[#5D4037] px-4 py-3 rounded-md w-full text-center shadow-md">
               <div className="flex items-center justify-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
                 <span className="text-xl font-bold">DOLL TURNING!</span>
@@ -324,7 +322,7 @@ const GameContainer = ({
           )}
           
           {isGameStarted && !isLookingAtPlayer && (
-            <div className="mt-4 bg-[#4CAF50]/80 text-white px-4 py-3 rounded-md w-full text-center">
+            <div className="mt-4 bg-[#4CAF50]/80 text-white px-4 py-3 rounded-md w-full text-center shadow-md">
               <div className="font-bold text-lg">SAFE TO BLINK</div>
             </div>
           )}
@@ -332,20 +330,30 @@ const GameContainer = ({
       </div>
 
       {/* Game progress bar */}
-      <div className="mt-8 max-w-[1200px] w-full">
-        <div className="flex items-center gap-4">
-          <div className="text-[#5D4037] font-bold">Game Progress: {Math.round((gameTime / 180) * 100)}%</div>
-          <div className="flex-1 h-4 bg-[#5D4037]/30 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#E5A953]" 
-              style={{ width: `${(gameTime / 180) * 100}%` }}
-            ></div>
+      {(isGameStarted || isCountingDown) && !isGameOver && !isVictory && (
+        <div className="mt-8 max-w-[1200px] w-full">
+          <div className="bg-[#F5ECD7] rounded-lg p-4 shadow-md border-2 border-[#5D4037]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[#5D4037] font-bold text-lg">
+                Game Progress: {Math.round((gameTime / 180) * 100)}%
+              </div>
+              <div className="text-[#5D4037] font-bold flex items-center">
+                <Clock className="w-5 h-5 mr-2" />
+                {formatTime(timeRemaining)}
+              </div>
+            </div>
+            <div className="w-full h-6 bg-[#5D4037]/20 rounded-full overflow-hidden shadow-inner">
+              <div 
+                className="h-full bg-[#E5A953] transition-all duration-1000 ease-linear shadow-md"
+                style={{ width: `${(gameTime / 180) * 100}%` }}
+              ></div>
+            </div>
+            <div className="text-right text-[#5D4037] mt-2 text-sm">
+              2024 Squint Game. Blink at your own risk.
+            </div>
           </div>
         </div>
-        <div className="text-right text-[#5D4037] mt-2">
-          2024 Squint Game. Blink at your own risk.
-        </div>
-      </div>
+      )}
     </div>
   );
 };

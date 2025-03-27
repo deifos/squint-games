@@ -2,22 +2,24 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DollCharacterProps {
-  isLookingAtPlayer?: boolean;
+  isLookingAtPlayer: boolean;
   onAnimationComplete?: () => void;
 }
 
-const DollCharacter = ({
-  isLookingAtPlayer = true,
+const DollCharacter: React.FC<DollCharacterProps> = ({
+  isLookingAtPlayer,
   onAnimationComplete = () => {},
-}: DollCharacterProps) => {
+}) => {
   return (
-    <div className="w-[400px] h-[300px] bg-[#F5ECD7] relative overflow-hidden rounded-lg border-2 border-[#5D4037] flex items-center justify-center">
-      {/* Emotion icons in the corners */}
-      <div className="absolute top-4 left-4 text-2xl">😠</div>
-      <div className="absolute top-4 right-4 text-2xl">😠</div>
-      <div className="absolute bottom-4 left-4 text-2xl">😠</div>
-      <div className="absolute bottom-4 right-4 text-2xl">😠</div>
-      
+    <div
+      className="relative w-full h-[450px] rounded-lg overflow-hidden flex items-center justify-center"
+      style={{
+        backgroundImage: 'url("/assets/dollbg.png")',
+        backgroundSize: "cover",
+        backgroundPosition: "center bottom",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <AnimatePresence mode="wait" onExitComplete={onAnimationComplete}>
         {isLookingAtPlayer ? (
           // Front image when looking at player
@@ -29,8 +31,8 @@ const DollCharacter = ({
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.3 }}
           >
-            <motion.div 
-              className="relative w-[200px] h-[200px] flex items-center justify-center"
+            <motion.div
+              className="relative w-[350px] h-[350px] flex items-center justify-center"
               animate={{
                 scale: [1, 1.05, 1],
               }}
@@ -40,9 +42,9 @@ const DollCharacter = ({
                 repeatType: "reverse",
               }}
             >
-              <img 
-                src="/assets/front.JPG" 
-                alt="Front facing character" 
+              <img
+                src="/assets/front.png"
+                alt="Front facing character"
                 className="max-w-full max-h-full object-contain"
               />
             </motion.div>
@@ -57,8 +59,8 @@ const DollCharacter = ({
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.3 }}
           >
-            <motion.div 
-              className="relative w-[200px] h-[200px] flex items-center justify-center"
+            <motion.div
+              className="relative w-[350px] h-[350px] flex items-center justify-center"
               animate={{
                 rotate: [-2, 2, -2],
               }}
@@ -68,9 +70,9 @@ const DollCharacter = ({
                 repeatType: "reverse",
               }}
             >
-              <img 
-                src="/assets/back.JPG" 
-                alt="Back facing character" 
+              <img
+                src="/assets/back.png"
+                alt="Back facing character"
                 className="max-w-full max-h-full object-contain"
               />
             </motion.div>
