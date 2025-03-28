@@ -1,32 +1,94 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import GameContainer from "./game/GameContainer";
 import { motion } from "framer-motion";
 import { Button } from "./ui/button";
-import { HelpCircle, RefreshCw, XIcon } from "lucide-react";
+import { RefreshCw, XIcon } from "lucide-react";
 import SplashScreen from "./SplashScreen";
 
 const Home = () => {
   const [showSplash, setShowSplash] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Check if this is the first visit
     const hasSeenSplash = localStorage.getItem("squintGames_hasSeenSplash");
+    const savedMuteState = localStorage.getItem("squintGames_isMuted");
+
+    // Initialize audio
+    audioRef.current = new Audio("/sounds/soundtrack.mp3");
+    audioRef.current.loop = true;
+    audioRef.current.volume = 0.2; // Set volume to 20% of maximum
+    
+    // Set volume based on saved preference
+    if (savedMuteState === "true") {
+      setIsMuted(true);
+    } else {
+      setIsMuted(false);
+      // Only play if not first visit or splash screen is not showing
+      if (!hasSeenSplash || !showSplash) {
+        audioRef.current.play().catch(err => {
+          console.log("Audio playback failed:", err);
+        });
+      }
+    }
 
     if (!hasSeenSplash) {
       // First visit, show splash screen
       setShowSplash(true);
     }
+
+    // Cleanup function
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, []);
+
+  // Effect to handle mute/unmute
+  useEffect(() => {
+    if (!audioRef.current) return;
+    
+    if (isMuted) {
+      audioRef.current.pause();
+    } else if (!showSplash) {
+      // Only play if splash screen is not showing
+      audioRef.current.play().catch(err => {
+        console.log("Audio playback failed:", err);
+      });
+    }
+    
+    // Save mute preference
+    localStorage.setItem("squintGames_isMuted", isMuted.toString());
+  }, [isMuted, showSplash]);
 
   const handleSplashComplete = () => {
     // Mark that user has seen the splash screen
     localStorage.setItem("squintGames_hasSeenSplash", "true");
     setShowSplash(false);
+    
+    // Start playing music after splash screen if not muted
+    if (!isMuted && audioRef.current) {
+      audioRef.current.play().catch(err => {
+        console.log("Audio playback failed:", err);
+      });
+    }
   };
 
   const resetSplashScreen = () => {
     localStorage.removeItem("squintGames_hasSeenSplash");
     setShowSplash(true);
+    
+    // Pause audio during splash screen
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  };
+
+  const toggleSound = () => {
+    setIsMuted(!isMuted);
   };
 
   return (
@@ -54,10 +116,14 @@ const Home = () => {
               className="h-12"
             />
           </div>
-          <Button variant="outline" className="text-gray-700 hover:bg-gray-100">
-            <HelpCircle className="w-4 h-4 mr-2" />
-            How to Play
-          </Button>
+          <button 
+            onClick={toggleSound}
+            aria-label={isMuted ? "Unmute sound" : "Mute sound"}
+            className="bg-[#F5ECD7] hover:bg-[#E6C28C] text-[#5D4037] border-4 border-[#5D4037] font-bold px-5 py-2 rounded-md text-lg flex items-center gap-2 transition-colors"
+          >
+            <span className="text-xl">{isMuted ? "🔇" : "🔊"}</span>
+            <span>{isMuted ? "Sound Off" : "Sound On"}</span>
+          </button>
         </div>
       </motion.header>
 

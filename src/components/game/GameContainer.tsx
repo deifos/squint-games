@@ -102,12 +102,14 @@ const GameContainer = ({
     }
   }, [isWebcamActive]);
 
+  // Start the game timer and doll turning cycle
   const startGameTimer = useCallback(() => {
+    console.log("Starting game timer and doll turning cycle");
     setGameTime(0);
     setTimeRemaining(180);
     difficultyRef.current = 1;
     
-    // Start with doll facing away from player
+    // Start with doll facing away from player (Green Light)
     setIsLookingAtPlayer(false);
     
     // Start the game timer
@@ -142,15 +144,12 @@ const GameContainer = ({
       });
     }, 1000);
     
-    // Force the first turn after a short delay to ensure the game starts properly
+    // Start the first turn cycle - after 2 seconds, turn to face player (Red Light)
+    console.log("Starting first turn cycle: Doll is facing away (Green Light)");
     setTimeout(() => {
-      // First turn - make doll look at player
-      setIsLookingAtPlayer(true);
-      
-      // Then schedule the normal turning cycle
-      setTimeout(() => {
-        scheduleDollTurn();
-      }, 100);
+      console.log("First turn: Doll turning to face player (Red Light)");
+      setIsLookingAtPlayer(true); // Turn to face player (Red Light)
+      scheduleDollTurn();
     }, 2000);
   }, []);
 
@@ -162,38 +161,54 @@ const GameContainer = ({
       dollTimerRef.current = null;
     }
     
+    // If game is over, don't schedule more turns
+    if (!isGameStarted || isGameOver || isVictory) {
+      console.log("Game is not active, not scheduling next turn");
+      return;
+    }
+    
     // Calculate timing based on current difficulty and whether doll is looking at player
     const currentDifficulty = difficultyRef.current;
     let delay: number;
     
     if (isLookingAtPlayer) {
-      // When looking at player (red light), stay longer as difficulty increases
-      // This makes it harder for the player as they need to avoid blinking longer
-      // Base delay: 3-5 seconds, multiplied by difficulty factor
-      const baseDelay = Math.random() * 2000 + 3000;
+      // RED LIGHT: Doll is facing player, players must not blink
+      // Duration increases with difficulty
+      const baseDelay = Math.random() * 2000 + 3000; // 3-5 seconds base
       delay = baseDelay * currentDifficulty;
-      // Cap the maximum delay at 12 seconds to avoid excessive difficulty
-      delay = Math.min(delay, 12000);
-      console.log(`Doll looking at player (RED LIGHT). Will turn away in ${delay/1000} seconds. Difficulty: ${currentDifficulty}`);
+      delay = Math.min(delay, 12000); // Cap at 12 seconds max
+      console.log(`RED LIGHT: Doll facing player for ${delay/1000} seconds (Difficulty: ${currentDifficulty})`);  
     } else {
-      // When facing away (green light), use a consistent shorter delay (1.5-3 seconds)
-      // This gives players a short but reasonable time to rest their eyes
-      // The rest time decreases slightly as difficulty increases
-      const baseDelay = Math.random() * 1500 + 1500;
-      // Rest time decreases as difficulty increases, but never below 1.5 seconds
-      delay = Math.max(baseDelay / (currentDifficulty * 0.5), 1500);
-      console.log(`Doll looking away (GREEN LIGHT). Will turn to face player in ${delay/1000} seconds. Difficulty: ${currentDifficulty}`);
+      // GREEN LIGHT: Doll is facing away, players can blink
+      // Duration decreases with difficulty but has a minimum
+      const baseDelay = Math.random() * 1500 + 1500; // 1.5-3 seconds base
+      delay = Math.max(baseDelay / (currentDifficulty * 0.5), 1500); // Minimum 1.5 seconds
+      console.log(`GREEN LIGHT: Doll facing away for ${delay/1000} seconds (Difficulty: ${currentDifficulty})`);
     }
     
-    // Schedule the next turn if game is still active
-    if (isGameStarted && !isGameOver && !isVictory) {
-      console.log(`Scheduling doll to turn in ${delay/1000} seconds`);
-      dollTimerRef.current = setTimeout(() => {
-        console.log(`Turning doll from ${isLookingAtPlayer ? 'facing player' : 'facing away'} to ${!isLookingAtPlayer ? 'facing player' : 'facing away'}`);
+    // Schedule the next turn
+    console.log(`Scheduling turn from ${isLookingAtPlayer ? 'Red Light' : 'Green Light'} to ${!isLookingAtPlayer ? 'Red Light' : 'Green Light'} in ${delay/1000} seconds`);
+    
+    dollTimerRef.current = setTimeout(() => {
+      // Only change the doll's state if the game is still active
+      if (isGameStarted && !isGameOver && !isVictory) {
+        console.log(`Executing turn: Changing from ${isLookingAtPlayer ? 'Red Light' : 'Green Light'} to ${!isLookingAtPlayer ? 'Red Light' : 'Green Light'}`);
         setIsLookingAtPlayer(prev => !prev);
-      }, delay);
-    }
+        scheduleDollTurn();
+      }
+    }, delay);
   }, [isLookingAtPlayer, isGameStarted, isGameOver, isVictory]);
+
+  // Handle doll animation completion
+  const handleDollAnimationComplete = useCallback(() => {
+    console.log(`Doll animation complete. Current state: ${isLookingAtPlayer ? 'Red Light (facing player)' : 'Green Light (facing away)'}`);
+    
+    // Only schedule the next turn if the game is still active
+    if (isGameStarted && !isGameOver && !isVictory) {
+      console.log('Animation complete, scheduling next turn...');
+      scheduleDollTurn();
+    }
+  }, [isGameStarted, isGameOver, isVictory, isLookingAtPlayer, scheduleDollTurn]);
 
   const handleStartGame = useCallback(() => {
     if (isWebcamActive) {
@@ -228,19 +243,6 @@ const GameContainer = ({
       dollTimerRef.current = null;
     }
   }, []);
-
-  const handleDollAnimationComplete = useCallback(() => {
-    // Schedule the next turn after animation completes
-    if (!isGameOver && !isVictory && isGameStarted) {
-      console.log(`Doll animation complete. Current state: ${isLookingAtPlayer ? 'Looking at player' : 'Looking away'}`);
-      
-      // Only schedule next turn if we're not already in a transition
-      if (!dollTimerRef.current) {
-        console.log('Scheduling next doll turn...');
-        scheduleDollTurn();
-      }
-    }
-  }, [isGameOver, isVictory, isGameStarted, scheduleDollTurn, isLookingAtPlayer]);
 
   // Check if player blinked while doll was looking
   useEffect(() => {
